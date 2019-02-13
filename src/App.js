@@ -6,6 +6,7 @@ import styled from 'styled-components'
 function createPlaceholderObject(title, props){
   const {is, youCan, isAlso} = {...props}
   return {
+    id: title,
     title,
     img: `images/${title.toLowerCase()}.jpg`,
     props: {
@@ -31,11 +32,27 @@ class App extends Component {
   constructor(props){
     super(props);
     this.tryQuery = this.tryQuery.bind(this);
-  }
-  renderCards = (items) =>{
-    return items.map(item => <Card key={item.title} {...item} />)
-  };
 
+    const items = [
+      createPlaceholderObject('Apple',  {is: ['red', 'round',], youCan: ['eat'], isAlso: ['a fruit']}),
+      createPlaceholderObject('Car',    {is: ['orange'], youCan: ['drive', 'sit in'], isAlso: ['a vehicel']}),
+      createPlaceholderObject('Dog',    {is: ['brown', 'furry'], youCan: ['pet', 'play fetch with'], isAlso: ['an animal']}),
+      createPlaceholderObject('Orange', {is: ['orange', 'round'], youCan: ['eat'], isAlso: ['a fruit']}),
+      createPlaceholderObject('Horse',  {is: ['brown', 'furry'], youCan: ['sit on', 'ride somewhere with'], isAlso: ['an animal']}),
+      createPlaceholderObject('Ball',  {is: ['red', 'round'], youCan: ['play with', 'bounce'], isAlso: ['toy']}),
+    ];
+    const randomItem = Math.floor(Math.random() * items.length);
+    const query = this.constructQuery(items[randomItem], items);
+    this.state = {query, items};
+  }
+
+  renderCards = (items) =>{
+    return items.map(item => <Card onCardClick={()=>this.checkAnswer(item.id)} key={item.id} {...item} />)
+  }
+
+  checkAnswer = (id) =>{
+    console.log(this.state.query.id === id);
+  }
   /**
    * Should return true if only one match exists
    * @param items
@@ -83,6 +100,7 @@ class App extends Component {
    * @param item
    */
   constructQuery(item, items){
+
     let query = {is: [], youCan: [], isAlso: []};
     let metaItem = jsonCopy(item.props); // Create an item we can "pick" props from
     let result = 2;
@@ -90,6 +108,7 @@ class App extends Component {
       query = this.populateProps(query, metaItem);
       result = this.tryQuery(items, query);
     }
+    query.id = item.title;
     return query;
   }
 
@@ -108,25 +127,31 @@ class App extends Component {
     return query;
   }
 
+  parseProp(props){
+    const lastProp = props.pop();
+    if(props.length === 0) return lastProp;
+    const propList = props.length > 1 ? props.join(', ') : props[0];
+    return `${propList} and ${lastProp}`;
+  }
+
+  outputQuery(query){
+    let phrase = '';
+    phrase = query.is.length > 0 ? 'I spy somthing that is ' + this.parseProp(query.is) : '';
+    phrase += query.youCan.length > 0 ? ', which you can ' + this.parseProp(query.youCan) + '.': '';
+    phrase += query.youCan.isAlso> 0 ? 'This is also called' + this.parseProp(query.isAlso) : '';
+    return phrase;
+  }
+
   
   render() {
-    const items = [
-      createPlaceholderObject('Apple',  {is: ['red', 'round',], youCan: ['eat it'], isAlso: ['a fruit']}),
-      createPlaceholderObject('Car',    {is: ['orange', 'shiny'], youCan: ['drive it', 'sit in it'], isAlso: ['a vehicel']}),
-      createPlaceholderObject('Dog',    {is: ['brown', 'furry'], youCan: ['pet it', 'play fetch with it'], isAlso: ['an animal']}),
-      createPlaceholderObject('Orange', {is: ['orange', 'round'], youCan: ['eat it'], isAlso: ['a fruit']}),
-      createPlaceholderObject('Horse',  {is: ['brown', 'furry'], youCan: ['sit on it', 'ride somewhere with it'], isAlso: ['an animal']}),
-      createPlaceholderObject('Ball',  {is: ['red', 'round'], youCan: ['play with it', 'bounce it'], isAlso: ['toy']}),
-    ];
 
-    const query = this.constructQuery(items[0], items);
-    console.log(query);
     
     return (
       <div className="App">
         <Cards>
-         {this.renderCards(items)}
+         {this.renderCards(this.state.items)}
         </Cards>
+        <div>{this.outputQuery(this.state.query)}</div>
       </div>
     );
   }

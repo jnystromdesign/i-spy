@@ -28,7 +28,7 @@ const CardImage = styled.img`
 const Card = (props) => {
 
     return (
-        <Root>
+        <Root onClick={props.onCardClick} >
             <CardImage src={`/${props.img}`} alt={props.title}/>
         </Root>
     );
