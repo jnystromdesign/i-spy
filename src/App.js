@@ -55,6 +55,7 @@ class App extends Component {
   }
 
   getNewSelectQuery(){
+
     if(this.state && this.state.query){
       const oldId = this.state.query.id;
       let newQuery = this.getSelectQuery();
@@ -114,7 +115,6 @@ class App extends Component {
     const itemProp = item.props;
     let success = true;
 
-
     // Test every prop from query on item
     for(let taxonomy in query){
       let queryProp = query[taxonomy];
@@ -166,9 +166,10 @@ class App extends Component {
   }
 
   parseProp(props){
-    const lastProp = props.pop();
-    if(props.length === 0) return lastProp;
-    const propList = props.length > 1 ? props.join(', ') : props[0];
+    const localProp = jsonCopy(props);
+    const lastProp = localProp.pop();
+    if(localProp.length === 0) return lastProp;
+    const propList = localProp.length > 1 ? localProp.join(', ') : localProp[0];
     return `${propList} och ${lastProp}`;
   }
 
