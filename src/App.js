@@ -22,28 +22,49 @@ function jsonCopy(src) {
 }
 
 const Cards = styled.div`
+  background-color: ${props => props.mood === 'success' ? 'lime': props.mood === 'fail' ? 'pink' : ''};
   display: grid;
   grid-gap: 10px;
   grid-template-columns: 1fr 1fr 1fr; 
   padding: 50px;
 `;
 
+const items = [
+  createPlaceholderObject('Apple',  {is: ['röd', 'rund',], youCan: ['äta'], isAlso: ['en frukt']}),
+  createPlaceholderObject('Car',    {is: ['orange'], youCan: ['köta', 'sitta i'], isAlso: ['ett fordon']}),
+  createPlaceholderObject('Dog',    {is: ['brun', 'hårig'], youCan: ['klappa', 'kasta apport med'], isAlso: ['ett djur']}),
+  createPlaceholderObject('Orange', {is: ['orange', 'rund'], youCan: ['äta'], isAlso: ['en frukt']}),
+  createPlaceholderObject('Horse',  {is: ['brun', 'hårig'], youCan: ['sitta på', 'rida någonstans'], isAlso: ['ett djur']}),
+  createPlaceholderObject('Ball',  {is: ['röd', 'rund'], youCan: ['leka med', 'studsa'], isAlso: ['leksak']}),
+];
+
 class App extends Component {
+
   constructor(props){
     super(props);
+    this.getSelectQuery = this.getSelectQuery.bind(this);
+    this.resetGame = this.resetGame.bind(this);
     this.tryQuery = this.tryQuery.bind(this);
+    this.state = {items, query: this.getSelectQuery()};
+  }
 
-    const items = [
-      createPlaceholderObject('Apple',  {is: ['red', 'round',], youCan: ['eat'], isAlso: ['a fruit']}),
-      createPlaceholderObject('Car',    {is: ['orange'], youCan: ['drive', 'sit in'], isAlso: ['a vehicel']}),
-      createPlaceholderObject('Dog',    {is: ['brown', 'furry'], youCan: ['pet', 'play fetch with'], isAlso: ['an animal']}),
-      createPlaceholderObject('Orange', {is: ['orange', 'round'], youCan: ['eat'], isAlso: ['a fruit']}),
-      createPlaceholderObject('Horse',  {is: ['brown', 'furry'], youCan: ['sit on', 'ride somewhere with'], isAlso: ['an animal']}),
-      createPlaceholderObject('Ball',  {is: ['red', 'round'], youCan: ['play with', 'bounce'], isAlso: ['toy']}),
-    ];
+  getSelectQuery = () => {
     const randomItem = Math.floor(Math.random() * items.length);
     const query = this.constructQuery(items[randomItem], items);
-    this.state = {query, items};
+    return query;
+  }
+
+  getNewSelectQuery(){
+    if(this.state && this.state.query){
+      const oldId = this.state.query.id;
+      let newQuery = this.getSelectQuery();
+      while(newQuery.id === oldId){
+        newQuery = this.getSelectQuery();
+      }
+      return newQuery;
+    }else{
+      return this.getSelectQuery();
+    }
   }
 
   renderCards = (items) =>{
@@ -51,8 +72,26 @@ class App extends Component {
   }
 
   checkAnswer = (id) =>{
-    console.log(this.state.query.id === id);
+    if(this.state.query.id === id){
+      this.onRightAnswer();
+    }else{
+      this.onWrongAnswer();
+    }
   }
+  
+  resetGame = () => {
+    this.setState({mood: null, query: this.getSelectQuery() });
+  }
+  
+  onRightAnswer = () =>{
+    this.setState({mood: 'success'});
+    setTimeout(this.resetGame, 1000);
+  }
+
+  onWrongAnswer = () =>{
+    this.setState({mood: 'fail'});
+  }
+
   /**
    * Should return true if only one match exists
    * @param items
@@ -88,7 +127,7 @@ class App extends Component {
         if(item.props[taxonomy].indexOf(queryPropValue) === -1) success = false;
       }
     }
-    
+
     return success; 
   }
 
@@ -100,7 +139,6 @@ class App extends Component {
    * @param item
    */
   constructQuery(item, items){
-
     let query = {is: [], youCan: [], isAlso: []};
     let metaItem = jsonCopy(item.props); // Create an item we can "pick" props from
     let result = 2;
@@ -131,27 +169,26 @@ class App extends Component {
     const lastProp = props.pop();
     if(props.length === 0) return lastProp;
     const propList = props.length > 1 ? props.join(', ') : props[0];
-    return `${propList} and ${lastProp}`;
+    return `${propList} och ${lastProp}`;
   }
 
-  outputQuery(query){
+  outputQuery(){
+    const query = this.state.query;
     let phrase = '';
-    phrase = query.is.length > 0 ? 'I spy somthing that is ' + this.parseProp(query.is) : '';
-    phrase += query.youCan.length > 0 ? ', which you can ' + this.parseProp(query.youCan) + '.': '';
-    phrase += query.youCan.isAlso> 0 ? 'This is also called' + this.parseProp(query.isAlso) : '';
+    phrase = query.is.length > 0 ? 'Jag ser en sak som är ' + this.parseProp(query.is) : '';
+    phrase += query.youCan.length > 0 ? ', som du kan ' + this.parseProp(query.youCan) + '.': '';
+    phrase += query.youCan.isAlso> 0 ? 'Det kallas även för' + this.parseProp(query.isAlso) : '';
     return phrase;
   }
 
   
   render() {
-
-    
     return (
       <div className="App">
-        <Cards>
+        <Cards mood={this.state.mood}>
          {this.renderCards(this.state.items)}
         </Cards>
-        <div>{this.outputQuery(this.state.query)}</div>
+        <div>{this.outputQuery()}</div>
       </div>
     );
   }
