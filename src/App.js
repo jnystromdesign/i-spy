@@ -48,7 +48,7 @@ const items = [
   createPlaceholderObject('Car',    {is: ['orange'], youCan: ['köta', 'sitta i'], isAlso: ['ett fordon']}),
   createPlaceholderObject('Dog',    {is: ['brun', 'hårig'], youCan: ['klappa', 'kasta apport med'], isAlso: ['ett djur']}),
   createPlaceholderObject('Orange', {is: ['orange', 'rund'], youCan: ['äta'], isAlso: ['en frukt']}),
-  createPlaceholderObject('Horse',  {is: ['brun', 'hårig'], youCan: ['sitta på', 'rida någonstans'], isAlso: ['ett djur']}),
+  createPlaceholderObject('Horse',  {is: ['brun', 'hårig'], youCan: ['sitta på', 'rida på'], isAlso: ['ett djur']}),
   createPlaceholderObject('Ball',  {is: ['röd', 'rund'], youCan: ['leka med', 'studsa'], isAlso: ['leksak']}),
   createPlaceholderObject('Pokeball',  {is: ['röd och vit', 'rund'], youCan: ['leka med', 'fånga pokemons'], isAlso: ['leksak']}),
   createPlaceholderObject('Fatolj',  {is: ['röd'], youCan: ['sitta i'], isAlso: ['möbel']}),
@@ -62,7 +62,7 @@ class App extends Component {
     this.getSelectQuery = this.getSelectQuery.bind(this);
     this.resetGame = this.resetGame.bind(this);
     this.tryQuery = this.tryQuery.bind(this);
-    this.state = {items, query: this.getSelectQuery()};
+    this.state = {items, query: this.getSelectQuery(), hasPlayedIntitialMessage: false };
   }
 
   getSelectQuery = () => {
@@ -99,12 +99,12 @@ class App extends Component {
   
   resetGame = () => {
     this.setState({mood: null, query: this.getSelectQuery() });
-    speakText('Ny omgång.  ' + this.outputQuery());
+    speakText('Gissa vad jag tittar på.  ' + this.outputQuery());
   }
   
   onRightAnswer = () =>{
     this.setState({mood: 'success'});
-    speakText('Rätt! Snyggt jobbat.');
+    speakText('Rätt!');
     setTimeout(this.resetGame, 1000);
   }
 
@@ -202,8 +202,15 @@ class App extends Component {
     return phrase;
   }
 
+  componentDidMount(){
+    if(!this.state.hasPlayedIntitialMessage){
+      speakText('Väl-kommen. Klicka på det du tror jag tittar på.   ' + this.outputQuery());
+      this.setState({hasPlayedIntitialMessage: true});
+    }
+  }
   
   render() {
+    
     return (
       <div className="App">
         <Cards mood={this.state.mood}>
