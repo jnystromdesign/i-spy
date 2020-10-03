@@ -3,6 +3,20 @@ import Card from './components/Card'
 import './App.css';
 import styled from 'styled-components'
 
+function speakText(text){
+  var msg = new SpeechSynthesisUtterance();
+  var voices = window.speechSynthesis.getVoices();
+  msg.voice = voices[3]; // Note: some voices don't support altering params
+  msg.voiceURI = 'native';
+  msg.volume = 1; // 0 to 1
+  msg.rate = 1; // 0.1 to 10
+  msg.pitch = .9; //0 to 2
+  msg.text = text;
+  msg.lang = 'sv-SE';
+
+
+speechSynthesis.speak(msg);
+}
 function createPlaceholderObject(title, props){
   const {is, youCan, isAlso} = {...props}
   return {
@@ -85,15 +99,18 @@ class App extends Component {
   
   resetGame = () => {
     this.setState({mood: null, query: this.getSelectQuery() });
+    speakText('Ny omgång.  ' + this.outputQuery());
   }
   
   onRightAnswer = () =>{
     this.setState({mood: 'success'});
+    speakText('Rätt! Snyggt jobbat.');
     setTimeout(this.resetGame, 1000);
   }
 
   onWrongAnswer = () =>{
     this.setState({mood: 'fail'});
+    speakText('Inte riktigt rätt. ' + this.outputQuery());
   }
 
   /**
