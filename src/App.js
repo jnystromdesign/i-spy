@@ -1,75 +1,36 @@
 import React, { Component } from 'react';
-import Card from './components/Card';
+import { ApolloClient, InMemoryCache, ApolloProvider } from '@apollo/client';
+import { useQuery } from '@apollo/client';
+import { speakText } from './utils/speakText';
+import { Q_BRICKS } from './gql/queries';
+import { mockItems } from './data/mockData';
 import './App.css';
-import styled from 'styled-components';
+import Card from './components/Card';
+import { Cards } from './styles/Cards';
 
-function speakText(text) {
-	var msg = new SpeechSynthesisUtterance();
-	var voices = window.speechSynthesis.getVoices();
-	msg.voice = voices.filter((voice) => voice.lang === 'sv-SE')[0]; // Note: some voices don't support altering params
-	msg.voiceURI = 'native';
-	msg.volume = 1; // 0 to 1
-	msg.rate = 1; // 0.1 to 10
-	msg.pitch = 1; //0 to 2
-	msg.text = text;
-	msg.lang = 'sv-SE';
-	console.table(msg);
-	speechSynthesis.speak(msg);
-}
+const client = new ApolloClient({
+	uri: 'https://tpptd3gd.api.sanity.io/v1/graphql/production/default',
+	cache: new InMemoryCache()
+});
 
-function createPlaceholderObject(title, props) {
-	const { is, youCan, isAlso } = { ...props };
-	return {
-		id: title,
-		title,
-		img: `images/${title.toLowerCase()}.jpg`,
-		props: {
-			is,
-			youCan,
-			isAlso
-		}
-	};
+function Bricks() {
+	const { loading, error, data } = useQuery(Q_BRICKS);
+
+	if (loading) return <p>Loading...</p>;
+	if (error) return <p>Error :(</p>;
+	console.log(data);
+	return data.allBrick.map(({ name, _id }) => (
+		<div key={_id}>
+			<p>{name}</p>
+		</div>
+	));
 }
 
 function jsonCopy(src) {
 	return JSON.parse(JSON.stringify(src));
 }
 
-const Cards = styled.div`
-	background-color: ${(props) => (props.mood === 'success' ? 'lime' : props.mood === 'fail' ? 'pink' : '')};
-	display: grid;
-	grid-gap: 10px;
-	grid-template-columns: 1fr 1fr 1fr;
-	padding: 50px;
-`;
-
-const items = [
-	createPlaceholderObject('Apple', { is: [ 'röd', 'rund' ], youCan: [ 'äta' ], isAlso: [ 'en frukt' ] }),
-	createPlaceholderObject('Car', { is: [ 'orange' ], youCan: [ 'köta', 'sitta i' ], isAlso: [ 'ett fordon' ] }),
-	createPlaceholderObject('Dog', {
-		is: [ 'brun', 'hårig' ],
-		youCan: [ 'klappa' ],
-		isAlso: [ 'ett djur' ]
-	}),
-	createPlaceholderObject('Orange', { is: [ 'orange', 'rund' ], youCan: [ 'äta' ], isAlso: [ 'en frukt' ] }),
-	createPlaceholderObject('Horse', {
-		is: [ 'brun', 'hårig' ],
-		youCan: [ 'sitta på', 'rida på' ],
-		isAlso: [ 'ett djur' ]
-	}),
-	createPlaceholderObject('Ball', { is: [ 'röd', 'rund' ], youCan: [ 'leka med', 'studsa' ], isAlso: [ 'leksak' ] }),
-	createPlaceholderObject('Pokeball', {
-		is: [ 'röd och vit', 'rund' ],
-		youCan: [ 'leka med', 'fånga pokemons' ],
-		isAlso: [ 'leksak' ]
-	}),
-	createPlaceholderObject('Fatolj', { is: [ 'röd' ], youCan: [ 'sitta i' ], isAlso: [ 'möbel' ] }),
-	createPlaceholderObject('Jordgubbe', {
-		is: [ 'röd', 'liten' ],
-		youCan: [ 'äta', 'koka sylt på' ],
-		isAlso: [ 'bär' ]
-	})
-];
+const items = mockItems;
 
 class App extends Component {
 	constructor(props) {
@@ -79,52 +40,14 @@ class App extends Component {
 		this.tryQuery = this.tryQuery.bind(this);
 		this.state = { items, query: this.getSelectQuery(), hasPlayedIntitialMessage: false };
 	}
-
+	/**
+   * Selects a random item from the current items at hand
+   * and construct a hint query for it
+   */
 	getSelectQuery = () => {
 		const randomItem = Math.floor(Math.random() * items.length);
 		const query = this.constructQuery(items[randomItem], items);
 		return query;
-	};
-
-	getNewSelectQuery() {
-		if (this.state && this.state.query) {
-			const oldId = this.state.query.id;
-			let newQuery = this.getSelectQuery();
-			while (newQuery.id === oldId) {
-				newQuery = this.getSelectQuery();
-			}
-			return newQuery;
-		} else {
-			return this.getSelectQuery();
-		}
-	}
-
-	renderCards = (items) => {
-		return items.map((item) => <Card onCardClick={() => this.checkAnswer(item.id)} key={item.id} {...item} />);
-	};
-
-	checkAnswer = (id) => {
-		if (this.state.query.id === id) {
-			this.onRightAnswer();
-		} else {
-			this.onWrongAnswer();
-		}
-	};
-
-	resetGame = () => {
-		this.setState({ mood: null, query: this.getSelectQuery() });
-		speakText('Gissa vad jag tittar på.  ' + this.outputQuery());
-	};
-
-	onRightAnswer = () => {
-		this.setState({ mood: 'success' });
-		speakText('Rätt!');
-		setTimeout(this.resetGame, 1000);
-	};
-
-	onWrongAnswer = () => {
-		this.setState({ mood: 'fail' });
-		speakText('Inte riktigt rätt. ' + this.outputQuery());
 	};
 
 	/**
@@ -145,7 +68,6 @@ class App extends Component {
 	}
 
 	testItem(item, query) {
-		const itemProp = item.props;
 		let success = true;
 
 		// Test every prop from query on item
@@ -221,10 +143,42 @@ class App extends Component {
 			this.setState({ hasPlayedIntitialMessage: true });
 		}
 	}
+	checkAnswer = (id) => {
+		if (this.state.query.id === id) {
+			this.onRightAnswer();
+		} else {
+			this.onWrongAnswer();
+		}
+	};
+
+	resetGame = () => {
+		this.setState({ mood: null, query: this.getSelectQuery() });
+		setTimeout(function() {
+			speakText('Gissa vad jag tittar på.  ' + this.outputQuery());
+		}, 500);
+	};
+
+	onRightAnswer = () => {
+		this.setState({ mood: 'success' });
+		speakText('Rätt!');
+		setTimeout(this.resetGame, 1000);
+	};
+
+	onWrongAnswer = () => {
+		this.setState({ mood: 'fail' });
+		speakText('Inte riktigt rätt. ' + this.outputQuery());
+	};
+
+	renderCards = (items) => {
+		return items.map((item) => <Card onCardClick={() => this.checkAnswer(item.id)} key={item.id} {...item} />);
+	};
 
 	render() {
 		return (
 			<div className="App">
+				<ApolloProvider client={client}>
+					<Bricks />
+				</ApolloProvider>
 				<Cards mood={this.state.mood}>{this.renderCards(this.state.items)}</Cards>
 				<div>{this.outputQuery()}</div>
 			</div>
