@@ -10,4 +10,4 @@ function speakText(text) {
 	msg.lang = 'sv-SE';
 	// speechSynthesis.speak(msg);
 }
-export { speakText };
+export default speakText;
